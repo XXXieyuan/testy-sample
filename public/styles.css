@@ -40,7 +40,7 @@ body.rage-mode {
 }
 
 body.screen-shake {
-  animation: screenShake 360ms linear;
+  animation: screenShake 600ms linear;
 }
 
 .fx-canvas {
@@ -208,12 +208,38 @@ body.screen-shake {
   transform: translateY(-1px) scale(1.01);
 }
 
-.streak-banner {
-  padding: 9px 12px;
+.rage-meter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.rage-meter-bar {
+  position: relative;
+  width: 120px;
+  height: 8px;
   border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(255, 122, 24, 0.24);
+}
+
+.rage-meter-fill {
+  position: absolute;
+  inset: 0;
+  width: 0%;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255, 122, 24, 0.9), rgba(255, 45, 85, 0.9));
+  box-shadow: 0 0 18px rgba(255, 45, 85, 0.7);
+  transition: width 200ms ease-out;
+}
+
+.rage-meter-label {
+  font-size: 0.82rem;
   color: #ffd6dc;
-  background: rgba(255, 45, 85, 0.15);
-  border: 1px solid rgba(255, 45, 85, 0.24);
+  white-space: nowrap;
 }
 
 textarea {
@@ -268,10 +294,6 @@ textarea:focus {
   pointer-events: none;
   opacity: 0;
   border-radius: 22px;
-}
-
-.destroy-animation.is-active {
-  animation: flareBlast 720ms ease-out;
 }
 
 .error-msg {
@@ -410,29 +432,144 @@ textarea:focus {
     transform: translateY(0);
   }
 }
+@keyframes screenShake {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  15% { transform: translate3d(-10px, 6px, 0) rotate(-1.5deg); }
+  30% { transform: translate3d(12px, -8px, 0) rotate(1.5deg); }
+  45% { transform: translate3d(-9px, -6px, 0) rotate(-1deg); }
+  60% { transform: translate3d(11px, 5px, 0) rotate(1deg); }
+  75% { transform: translate3d(-7px, 4px, 0) rotate(-0.6deg); }
+}
 
-@keyframes flareBlast {
+.rage-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  font-size: 2.4rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 18px rgba(255, 45, 85, 0.9), 0 0 40px rgba(255, 122, 24, 0.9);
+  color: #ffe7ec;
+  z-index: 45;
+  transform: scale(0.9);
+}
+
+.rage-overlay.is-visible {
+  animation: rageOverlayIn 1200ms ease-out forwards;
+}
+
+.milestone-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 18vh;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 44;
+  font-size: 1.35rem;
+  color: #ffeef9;
+  text-shadow: 0 0 14px rgba(123, 97, 255, 0.9);
+}
+
+.milestone-overlay.is-visible {
+  animation: milestonePop 1400ms ease-out forwards;
+}
+
+.combo-banner {
+  position: absolute;
+  right: 0;
+  top: -26px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  color: #ffe7f0;
+  background: radial-gradient(circle at top left, rgba(255, 122, 24, 0.8), rgba(255, 45, 85, 0.85));
+  box-shadow: 0 6px 18px rgba(255, 45, 85, 0.4);
+  opacity: 0;
+  transform: translateY(-8px) scale(0.9);
+  pointer-events: none;
+}
+
+.combo-banner.is-visible {
+  animation: comboBurst 720ms ease-out forwards;
+}
+
+@keyframes rageOverlayIn {
   0% {
-    opacity: 0.05;
-    box-shadow: inset 0 0 0 0 rgba(255, 122, 24, 0.4);
-    background: radial-gradient(circle at center, rgba(255, 122, 24, 0.35) 0%, transparent 15%);
+    opacity: 0;
+    transform: scale(0.7);
   }
-  45% {
+  50% {
     opacity: 1;
-    background: radial-gradient(circle at center, rgba(255, 122, 24, 0.32) 0%, rgba(255, 45, 85, 0.16) 30%, transparent 65%);
+    transform: scale(1.02);
   }
   100% {
     opacity: 0;
-    background: radial-gradient(circle at center, rgba(255, 122, 24, 0.05) 0%, transparent 70%);
+    transform: scale(1.08);
   }
 }
 
-@keyframes screenShake {
-  0%, 100% { transform: translate3d(0, 0, 0); }
-  20% { transform: translate3d(-5px, 3px, 0); }
-  40% { transform: translate3d(6px, -4px, 0); }
-  60% { transform: translate3d(-4px, -3px, 0); }
-  80% { transform: translate3d(5px, 2px, 0); }
+@keyframes milestonePop {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+}
+
+@keyframes comboBurst {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.9);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(0) scale(1.08);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+}
+
+body.rage-mode .panel,
+body.rage-mode .app-header,
+body.rage-mode .leaderboard-item,
+body.rage-mode .vent-box,
+body.rage-mode .destroy-btn {
+  animation: rageGlow 900ms ease-in-out infinite alternate;
+  border-color: rgba(255, 45, 85, 0.6);
+  box-shadow: 0 0 0 1px rgba(255, 45, 85, 0.55), 0 0 40px rgba(255, 45, 85, 0.5);
+}
+
+@keyframes rageGlow {
+  0% {
+    box-shadow: 0 0 0 1px rgba(255, 45, 85, 0.35), 0 0 16px rgba(255, 45, 85, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 0 1px rgba(255, 122, 24, 0.9), 0 0 40px rgba(255, 122, 24, 0.9);
+  }
 }
 
 @media (max-width: 960px) {

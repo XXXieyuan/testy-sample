@@ -1,3 +1,144 @@
+// Nickname system ----------------------------------------------------------
+function getNickname() {
+  let nick = document.cookie.match(/ventNickname=([^;]+)/);
+  if (nick) return decodeURIComponent(nick[1]);
+  const prefixes = ['匿名熔炉者', '暗夜喷火龙', '键盘毁灭者', '深夜怒吼兽', '摸鱼叛逆者', '暴躁老哥', '咆哮帝', '狂怒战士', '午夜游魂', '愤怒小鸟'];
+  const name = `${prefixes[Math.floor(Math.random() * prefixes.length)]}#${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
+  document.cookie = `ventNickname=${encodeURIComponent(name)};max-age=${365 * 86400};path=/`;
+  return name;
+}
+
+const myNickname = getNickname();
+const nicknameDisplayEl = document.getElementById('nickname-display');
+if (nicknameDisplayEl) {
+  nicknameDisplayEl.textContent = myNickname;
+}
+
+// Monster avatar generator -------------------------------------------------
+function hashCode(str) {
+  let h = 0;
+  const text = String(str || '匿名');
+  for (let i = 0; i < text.length; i += 1) {
+    h = ((h << 5) - h) + text.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+}
+
+function seededRandom(seed) {
+  let s = seed;
+  return () => {
+    s = (s * 16807) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
+function generateMonsterAvatar(nickname) {
+  const seed = hashCode(nickname || '匿名');
+  const rng = seededRandom(seed);
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  const colors = ['#ff006e', '#00f0ff', '#39ff14', '#ff6600', '#bf00ff', '#ffff00'];
+  const bg = colors[Math.floor(rng() * colors.length)];
+  const fg = colors[Math.floor(rng() * colors.length)];
+  const size = 8; // each pixel block is 8x8, grid is 7x7 but mirrored from 4 columns
+  // main mirrored body
+  for (let y = 0; y < 7; y += 1) {
+    for (let x = 0; x < 4; x += 1) {
+      if (rng() > 0.45) {
+        ctx.fillStyle = rng() > 0.5 ? bg : fg;
+        const offsetY = (64 - 56) / 2;
+        ctx.fillRect(x * size, y * size + offsetY, size, size);
+        ctx.fillRect((6 - x) * size, y * size + offsetY, size, size);
+      }
+    }
+  }
+  // center column
+  for (let y = 0; y < 7; y += 1) {
+    if (rng() > 0.4) {
+      ctx.fillStyle = rng() > 0.5 ? bg : fg;
+      ctx.fillRect(3 * size, y * size + 4, size, size);
+    }
+  }
+  return canvas.toDataURL();
+}
+
+// Category & rage state ----------------------------------------------------
+let selectedCategory = '其他';
+let filterCategory = '全部';
+let consecutivePosts = 0;
+
+// Dark humor placeholders --------------------------------------------------
+const placeholders = ['今天又想骂谁？', '把不爽写出来，写完炸掉', '你的怒火价值连城', '深呼吸，然后开骂', '这里没有老板看得到', '尽情发泄吧，反正要炸掉', '写完就炸，绝不留证据'];
+
+function rotatePlaceholder() {
+  const ta = document.getElementById('ventInput') || document.getElementById('vent-input');
+  if (ta) {
+    ta.placeholder = placeholders[Math.floor(Math.random() * placeholders.length)];
+  }
+}
+
+// Particle explosion system -----------------------------------------------
+const fxCanvas = document.getElementById('fx-canvas');
+const fxCtx = fxCanvas ? fxCanvas.getContext('2d') : null;
+let particles = [];
+
+function resizeFxCanvas() {
+  if (!fxCanvas) return;
+  fxCanvas.width = window.innerWidth;
+  fxCanvas.height = window.innerHeight;
+}
+
+window.addEventListener('resize', resizeFxCanvas);
+resizeFxCanvas();
+
+class Particle {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 2 + Math.random() * 6;
+    this.vx = Math.cos(angle) * speed;
+    this.vy = Math.sin(angle) * speed;
+    this.life = 1;
+    this.decay = 0.01 + Math.random() * 0.02;
+    this.size = 2 + Math.random() * 4;
+    const palette = ['#ff006e', '#00f0ff', '#39ff14', '#ff6600', '#bf00ff'];
+    this.color = palette[Math.floor(Math.random() * palette.length)];
+  }
+}
+
+function spawnExplosion(x, y) {
+  for (let i = 0; i < 150; i += 1) {
+    particles.push(new Particle(x, y));
+  }
+}
+
+function animateParticles() {
+  if (!fxCtx || !fxCanvas) {
+    requestAnimationFrame(animateParticles);
+    return;
+  }
+  fxCtx.clearRect(0, 0, fxCanvas.width, fxCanvas.height);
+  particles = particles.filter((p) => p.life > 0);
+  particles.forEach((p) => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.1;
+    p.life -= p.decay;
+    fxCtx.globalAlpha = p.life;
+    fxCtx.fillStyle = p.color;
+    fxCtx.fillRect(p.x, p.y, p.size, p.size);
+  });
+  fxCtx.globalAlpha = 1;
+  requestAnimationFrame(animateParticles);
+}
+
+animateParticles();
+
+// Global app state ---------------------------------------------------------
 const state = {
   vents: [],
   category: '全部',
@@ -5,30 +146,34 @@ const state = {
   validCategories: ['老板', '学校', '生活', '感情', '其他'],
   todayDestroyed: 0,
   categoryTotals: {},
-  nickname: '',
+  nickname: myNickname,
   avatarSeed: '',
   destroyStreak: 0,
+  rageActive: false,
+  lastDailyCount: 0,
   ws: null,
   wsConnected: false,
+  comboTimer: null,
+  audioContext: null,
 };
 
 const api = {
   async getProfile() {
     const res = await fetch('/api/profile');
-    if (!res.ok) throw new Error('Failed to fetch profile');
+    if (!res.ok) throw new Error('获取配置失败');
     return res.json();
   },
   async getVents(category = '全部') {
     const query = category && category !== '全部' ? `?category=${encodeURIComponent(category)}` : '';
     const res = await fetch(`/api/vents${query}`);
-    if (!res.ok) throw new Error('Failed to fetch vents');
+    if (!res.ok) throw new Error('获取排行榜失败');
     return res.json();
   },
-  async createVent(content, category) {
+  async createVent(content, category, nickname) {
     const res = await fetch('/api/vents', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content, category }),
+      body: JSON.stringify({ content, category, nickname }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -44,6 +189,11 @@ const api = {
       throw new Error(data && data.error ? data.error : '点赞失败');
     }
     return data;
+  },
+  async getDailyCount() {
+    const res = await fetch('/api/daily-count');
+    if (!res.ok) throw new Error('获取今日计数失败');
+    return res.json();
   },
 };
 
@@ -109,6 +259,57 @@ function updateHeaderStats() {
   if (nickname) nickname.textContent = state.nickname || '匿名熔炉者#0000';
 }
 
+// Rage meter, sound & combo -----------------------------------------------
+function updateRageMeter() {
+  const fill = document.querySelector('.rage-meter-fill') || document.querySelector('.rage-fill');
+  if (fill) {
+    const pct = Math.max(0, Math.min(consecutivePosts / 3, 1)) * 100;
+    fill.style.width = `${pct}%`;
+  }
+  const text = document.querySelector('.rage-meter-label') || document.querySelector('.rage-text');
+  if (text) {
+    text.textContent = `暴怒计量：${consecutivePosts}/3`;
+  }
+}
+
+function playExplosionSound() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ac = new AudioCtx();
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.connect(gain);
+    gain.connect(ac.destination);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(200, ac.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(40, ac.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.5, ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ac.currentTime + 0.3);
+    osc.start();
+    osc.stop(ac.currentTime + 0.3);
+  } catch (e) {
+    // ignore audio errors in older browsers or restricted environments
+  }
+}
+
+function showCombo(count) {
+  if (count < 2) return;
+  const el = document.getElementById('combo-counter') || document.getElementById('combo-banner');
+  if (!el) return;
+  el.textContent = `连击 x${count}! 🔥`;
+  el.style.display = 'block';
+  // restart animation
+  el.style.animation = 'none';
+  // force reflow
+  // eslint-disable-next-line no-unused-expressions
+  el.offsetHeight;
+  el.style.animation = 'comboPopup 1s ease-out forwards';
+  setTimeout(() => {
+    el.style.display = 'none';
+  }, 1200);
+}
+
 function renderCategoryButtons(rootId, activeCategory, onSelect, includeAll = false) {
   const root = document.getElementById(rootId);
   if (!root) return;
@@ -136,7 +337,7 @@ function createLeaderboardItem(vent, index, likeHandler) {
   const monster = document.createElement('img');
   monster.className = 'monster-avatar';
   monster.alt = `${vent.nickname} 的像素怪物头像`;
-  monster.src = createMonsterSvg(vent.avatar_seed || vent.nickname || vent.id);
+  monster.src = generateMonsterAvatar(vent.nickname || '匿名熔炉者');
 
   const main = document.createElement('div');
   main.className = 'leaderboard-main';
@@ -216,9 +417,20 @@ function renderLeaderboardFromState() {
   };
   state.vents.forEach((vent, index) => {
     const item = createLeaderboardItem(vent, index, likeHandler);
-    item.style.animationDelay = `${index * 40}ms`;
+    item.style.animationDelay = `${index * 60}ms`;
     root.appendChild(item);
   });
+}
+
+// Legacy-style helpers for compatibility ----------------------------------
+async function loadLeaderboard() {
+  await refreshLeaderboard();
+}
+
+function renderLeaderboardItem(vent, index) {
+  // Provide a basic wrapper so external callers can reuse the DOM rendering
+  const noop = async () => vent;
+  return createLeaderboardItem(vent, index, noop);
 }
 
 function applySnapshot(payload) {
@@ -230,6 +442,7 @@ function applySnapshot(payload) {
   updateHeaderStats();
   renderCategoryButtons('filter-toolbar', state.category, async (category) => {
     state.category = category;
+    filterCategory = category;
     await refreshLeaderboard();
   }, true);
 }
@@ -254,58 +467,6 @@ async function refreshLeaderboard() {
   renderLeaderboardFromState();
 }
 
-function resizeCanvas(canvas) {
-  const ratio = window.devicePixelRatio || 1;
-  canvas.width = Math.floor(window.innerWidth * ratio);
-  canvas.height = Math.floor(window.innerHeight * ratio);
-  canvas.style.width = `${window.innerWidth}px`;
-  canvas.style.height = `${window.innerHeight}px`;
-  return ratio;
-}
-
-function burstParticles({ x, y, color = '#ff4d6d', count = 24, spread = 2.5 }) {
-  const canvas = document.getElementById('fx-canvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const ratio = resizeCanvas(canvas);
-  let particles = Array.from({ length: count }, (_, index) => {
-    const angle = (Math.PI * 2 * index) / count + Math.random() * 0.6;
-    const speed = 2 + Math.random() * spread;
-    return {
-      x: x * ratio,
-      y: y * ratio,
-      vx: Math.cos(angle) * speed * ratio,
-      vy: Math.sin(angle) * speed * ratio,
-      life: 40 + Math.random() * 30,
-      size: (2 + Math.random() * 4) * ratio,
-      color,
-    };
-  });
-
-  function frame() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    particles = particles.filter((particle) => particle.life > 0);
-    particles.forEach((particle) => {
-      particle.life -= 1;
-      particle.x += particle.vx;
-      particle.y += particle.vy;
-      particle.vy += 0.08 * ratio;
-      ctx.globalAlpha = Math.max(particle.life / 70, 0);
-      ctx.fillStyle = particle.color;
-      ctx.beginPath();
-      ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-      ctx.fill();
-    });
-    if (particles.length) {
-      requestAnimationFrame(frame);
-    } else {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-  }
-
-  requestAnimationFrame(frame);
-}
-
 function triggerScreenShake() {
   document.body.classList.remove('screen-shake');
   void document.body.offsetWidth;
@@ -322,10 +483,21 @@ function updateStreakBanner() {
 
 function triggerRageMode() {
   document.body.classList.add('rage-mode');
-  for (let i = 0; i < 4; i += 1) {
-    burstParticles({ x: window.innerWidth * (0.2 + i * 0.2), y: window.innerHeight * 0.35, color: '#ff2d55', count: 34, spread: 3.8 });
+  const overlay = document.getElementById('rage-overlay');
+  if (overlay) {
+    overlay.style.display = 'flex';
   }
-  setTimeout(() => document.body.classList.remove('rage-mode'), 1800);
+  spawnExplosion(window.innerWidth / 2, window.innerHeight / 2);
+  triggerScreenShake();
+  playExplosionSound();
+  setTimeout(() => {
+    document.body.classList.remove('rage-mode');
+    if (overlay) {
+      overlay.style.display = 'none';
+    }
+    consecutivePosts = 0;
+    updateRageMeter();
+  }, 5000);
 }
 
 function setupDestroyFlow() {
@@ -358,7 +530,7 @@ function setupDestroyFlow() {
   });
 
   updateCounter();
-  updateStreakBanner();
+  updateRageMeter();
 
   const triggerAnimation = () => {
     if (!animationLayer) return;
@@ -366,10 +538,10 @@ function setupDestroyFlow() {
     void animationLayer.offsetWidth;
     animationLayer.classList.add('is-active');
     const rect = button.getBoundingClientRect();
-    burstParticles({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, color: '#ff7a18', count: 42, spread: 4.5 });
+    spawnExplosion(rect.left + rect.width / 2, rect.top);
   };
 
-  button.addEventListener('click', async () => {
+  async function handleVent() {
     const raw = textarea.value.trim();
     errorEl.textContent = '';
 
@@ -384,14 +556,16 @@ function setupDestroyFlow() {
     try {
       triggerAnimation();
       triggerScreenShake();
-      await api.createVent(raw, state.composeCategory || '其他');
+      await api.createVent(raw, selectedCategory || state.composeCategory || '其他', myNickname);
       textarea.value = '';
       updateCounter();
-      state.destroyStreak += 1;
-      updateStreakBanner();
-      if (state.destroyStreak % 3 === 0) {
+      consecutivePosts += 1;
+      updateRageMeter();
+      showCombo(consecutivePosts);
+      if (consecutivePosts >= 3) {
         triggerRageMode();
       }
+      rotatePlaceholder();
       await refreshLeaderboard();
     } catch (err) {
       console.error(err);
@@ -400,6 +574,10 @@ function setupDestroyFlow() {
       button.disabled = false;
       textarea.disabled = false;
     }
+  }
+
+  button.addEventListener('click', async () => {
+    handleVent();
   });
 }
 
@@ -422,6 +600,29 @@ function setupRealtime() {
           applySnapshot(message.payload);
           renderLeaderboardFromState();
         }
+      } else if (message.type === 'daily_count' && message.payload) {
+        const count = typeof message.payload.count === 'number' ? message.payload.count : message.payload.todayDestroyed;
+        if (typeof count === 'number') {
+          state.todayDestroyed = count;
+          updateHeaderStats();
+        }
+      } else if (message.type === 'new_vent' && message.payload) {
+        const vent = message.payload.vent || message.payload;
+        if (vent) {
+          if (state.category === '全部' || vent.category === state.category) {
+            state.vents = [vent, ...(state.vents || [])];
+            renderLeaderboardFromState();
+          }
+        }
+      } else if (message.type === 'like_update' && message.payload) {
+        const { id, likes } = message.payload;
+        if (id != null && typeof likes === 'number' && Array.isArray(state.vents)) {
+          const target = state.vents.find((v) => v.id === id);
+          if (target) {
+            target.likes = likes;
+            renderLeaderboardFromState();
+          }
+        }
       }
     } catch (err) {
       console.error('ws message error', err);
@@ -436,21 +637,22 @@ function setupRealtime() {
 
 async function bootstrap() {
   const profileData = await api.getProfile();
-  state.nickname = profileData.profile.nickname;
-  state.avatarSeed = profileData.profile.avatarSeed;
   state.validCategories = profileData.validCategories || state.validCategories;
   state.categoryTotals = Object.fromEntries(state.validCategories.map((category) => [category, 0]));
   state.categoryTotals.全部 = 0;
+  state.nickname = myNickname;
   updateHeaderStats();
 
   const composeSelect = (category) => {
     state.composeCategory = category;
+    selectedCategory = category;
     renderCategoryButtons('category-group', category, composeSelect, false);
   };
   composeSelect('其他');
 
   const filterSelect = async (category) => {
     state.category = category;
+    filterCategory = category;
     renderCategoryButtons('filter-toolbar', category, filterSelect, true);
     await refreshLeaderboard();
   };
@@ -459,12 +661,8 @@ async function bootstrap() {
   setupDestroyFlow();
   await refreshLeaderboard();
   setupRealtime();
+  rotatePlaceholder();
 }
-
-window.addEventListener('resize', () => {
-  const canvas = document.getElementById('fx-canvas');
-  if (canvas) resizeCanvas(canvas);
-});
 
 window.addEventListener('DOMContentLoaded', () => {
   bootstrap().catch((err) => {

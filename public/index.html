@@ -36,9 +36,15 @@
         <div class="vent-box">
           <div class="composer-meta">
             <div class="category-group" id="category-group"></div>
-            <div id="streak-banner" class="streak-banner">连续销毁 0 / 3</div>
+            <div id="rage-meter" class="rage-meter">
+              <div class="rage-meter-bar">
+                <div class="rage-meter-fill"></div>
+              </div>
+              <div class="rage-meter-label">暴怒计量：0 / 3</div>
+            </div>
           </div>
           <textarea id="vent-input" maxlength="500" placeholder="今天什么事情最想被销毁？"></textarea>
+          <div id="combo-banner" class="combo-banner" aria-hidden="true"></div>
           <div class="quick-insert">
             <span>火速开喷：</span>
             <button type="button" class="quick-chip" data-template="今天的离谱程度已经突破大气层。">离谱</button>
@@ -74,6 +80,9 @@
       <span>原型用途，仅供发泄，不供报仇。</span>
     </footer>
   </div>
+
+  <div id="rage-overlay" class="rage-overlay" aria-hidden="true">🔥 暴怒模式 🔥</div>
+  <div id="milestone-overlay" class="milestone-overlay" aria-hidden="true"></div>
 
   <script src="/app.js"></script>
 </body>

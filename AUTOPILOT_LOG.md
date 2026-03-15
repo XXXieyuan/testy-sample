@@ -1,47 +1,38 @@
-# AUTOPILOT_LOG
+# Autopilot Work Log — 2026-03-15
 
-- 时间：2026-03-15 16:20 UTC
-- 模式：Autopilot
-- 仓库：`/home/node/.openclaw/workspace/testy-sample`
+## Task
+升级 testy-sample 发泄平台 web app，新增以下功能：
 
-## 本次升级内容
+**功能升级：**
+1. 每条吐槽自动生成随机像素怪物头像（Canvas/SVG生成，无外部API）
+2. 发泄分类标签："老板"/"学校"/"生活"/"感情"/"其他"，排行榜按标签筛选
+3. 连续发3条触发"暴怒模式"特效（页面变红+粒子爆炸）
+4. 顶部显示今天全站销毁了多少条
 
-1. 为每条吐槽新增基于 seed 的随机像素怪物头像，使用前端 SVG 生成，无外部 API。
-2. 增加发泄分类标签：`老板 / 学校 / 生活 / 感情 / 其他`，支持发帖分类与排行榜筛选。
-3. 增加连续发 3 条触发的「暴怒模式」：页面染红 + 多点粒子爆炸。
-4. 顶部新增「今日全站已销毁多少条」统计。
-5. 将销毁动画升级为 Canvas 粒子爆炸效果。
-6. 为排行榜条目增加淡入动画。
-7. 点击销毁按钮时增加全屏抖动特效。
-8. 新增随机 nickname（如 `匿名熔炉者#1234`），使用 cookie 持久化。
-9. 引入 WebSocket 实时更新排行榜。
+**视觉升级：**
+5. 销毁动画改为粒子爆炸效果（Canvas）
+6. 排行榜条目淡入动画
+7. 点销毁时全屏抖动
 
-## 额外增强
+**架构升级：**
+8. 随机 nickname（如"匿名熔炉者#1234"），cookie 持久化
+9. WebSocket 实时更新排行榜
 
-- 增加快捷吐槽 chips，减少空白输入摩擦。
-- 排行榜显示发帖昵称、标签、时间与像素怪物头像。
-- 排行榜筛选器显示各分类条目总量。
-- 保留原有核心能力：发帖、点赞、排序、单页应用访问。
+额外：Amy 自主判断可以增加的有趣改进
 
-## 主要改动文件
+## Timeline
 
-- `server.js`
-- `public/index.html`
-- `public/app.js`
-- `public/styles.css`
-- `package.json`
+### [16:39] Planner Started
+- Model: gpt-5.4 (read-only)
+- Task sent: Full upgrade requirements + existing codebase analysis
 
-## 验证
+### [16:42] Planner Completed ✅
+- Detailed plan produced covering all 9 features + bonus ideas
+- DB migration: add `category` and `nickname` columns
+- New modules: avatar generator, particle system, rage mode
+- Bonus features: rage meter, combo counter, sound effects, easter eggs, dark humor messages
+- No questions from Planner — plan is clear and complete
 
-- `npm install`
-- 启动 `node server.js`
-- 验证 `/api/health`
-- 验证 `/api/profile`
-- 验证 `POST /api/vents`
-- 验证 `GET /api/vents?category=老板`
-
-## 备注
-
-- 数据库采用增量 schema 升级，兼容已有 `vents` 表。
-- WebSocket 服务路径为 `/ws`。
-- 昵称由服务器生成并通过 cookie 固定，避免刷新后身份漂移。
+### [16:42] Executor Started (Autopilot — no approval wait)
+- Model: gpt-5.3-codex-xhigh (full-auto)
+- Implementing complete plan
