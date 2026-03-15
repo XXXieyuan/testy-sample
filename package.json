@@ -1,25 +1,17 @@
 {
   "name": "testy-sample",
   "version": "1.0.0",
-  "description": "Neon venting platform with Node.js, Express, SQLite, and SPA frontend",
+  "description": "Dark neon venting SPA prototype with destroy animation, SQLite persistence, and leaderboard.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "NODE_ENV=development node server.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/XXXieyuan/testy-sample.git"
-  },
-  "keywords": [],
   "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/XXXieyuan/testy-sample/issues"
-  },
-  "homepage": "https://github.com/XXXieyuan/testy-sample#readme",
+  "license": "MIT",
   "dependencies": {
-    "express": "^5.2.1",
-    "sqlite3": "^6.0.1"
+    "better-sqlite3": "^11.3.0",
+    "express": "^4.19.2",
+    "morgan": "^1.10.0"
   }
 }
