@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Testy Sample · 销毁吐槽站</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">NEON VENT CORE</p>
+          <h1>把情绪扔进火里。</h1>
+          <p class="subtitle">
+            写下你的吐槽，点击 <strong>销毁</strong>，看它在霓虹夜色里裂解燃烧；
+            你的情绪会被存档，最有共鸣的吐槽会冲上排行榜。
+          </p>
+        </div>
+        <div class="hero-stats">
+          <div class="stat-card">
+            <span id="ventCount">0</span>
+            <small>已销毁吐槽</small>
+          </div>
+          <div class="stat-card accent">
+            <span id="totalLikes">0</span>
+            <small>累计共鸣</small>
+          </div>
+        </div>
+      </header>
+
+      <main class="main-grid">
+        <section class="panel composer-panel">
+          <div class="panel-header">
+            <h2>情绪焚化炉</h2>
+            <span class="badge">匿名记录 · 永久留痕</span>
+          </div>
+
+          <form id="ventForm" class="vent-form">
+            <label class="sr-only" for="ventInput">输入你的吐槽</label>
+            <textarea
+              id="ventInput"
+              maxlength="500"
+              placeholder="今天什么最让你想翻白眼？把它丢进来……"
+              required
+            ></textarea>
+
+            <div class="form-footer">
+              <div class="meta-row">
+                <span id="charCount">0 / 500</span>
+                <span id="statusText">等待销毁指令</span>
+              </div>
+              <button id="destroyButton" type="submit">销毁</button>
+            </div>
+          </form>
+
+          <div id="forge" class="forge" aria-live="polite">
+            <div class="forge-core"></div>
+            <div id="shardLayer" class="shard-layer"></div>
+            <p id="forgeMessage">输入吐槽后，点击「销毁」。</p>
+          </div>
+        </section>
+
+        <section class="panel leaderboard-panel">
+          <div class="panel-header">
+            <h2>废墟排行榜</h2>
+            <span class="badge badge-green">按点赞数排序</span>
+          </div>
+          <div id="leaderboard" class="leaderboard"></div>
+        </section>
+      </main>
+    </div>
+
+    <template id="ventCardTemplate">
+      <article class="vent-card">
+        <div class="vent-rank"></div>
+        <div class="vent-body">
+          <p class="vent-content"></p>
+          <div class="vent-meta">
+            <span class="vent-date"></span>
+            <button class="like-button" type="button">⚡ 共鸣 <span class="like-count"></span></button>
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>
