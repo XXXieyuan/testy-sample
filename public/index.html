@@ -7,12 +7,24 @@
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
+  <canvas id="fx-canvas" class="fx-canvas" aria-hidden="true"></canvas>
   <div id="app">
     <header class="app-header">
       <div class="logo-mark">⚡</div>
       <div class="title-block">
         <h1>Testy Vent Lab</h1>
         <p class="subtitle">把情绪写出来，点一下「销毁」，剩下交给熔炉。</p>
+      </div>
+      <div class="header-stats">
+        <div class="daily-counter">
+          <span class="counter-label">今日全站已销毁</span>
+          <strong id="today-destroyed">0</strong>
+          <span class="counter-unit">条</span>
+        </div>
+        <div class="nickname-card">
+          <span class="counter-label">你的匿名代号</span>
+          <strong id="nickname-display">匿名熔炉者#0000</strong>
+        </div>
       </div>
     </header>
 
@@ -22,7 +34,17 @@
         <p class="hint">匿名吐槽、碎碎念、胡乱发疯都可以。点击下方「销毁」按钮，看它在霓虹火焰中化为灰烬。</p>
 
         <div class="vent-box">
+          <div class="composer-meta">
+            <div class="category-group" id="category-group"></div>
+            <div id="streak-banner" class="streak-banner">连续销毁 0 / 3</div>
+          </div>
           <textarea id="vent-input" maxlength="500" placeholder="今天什么事情最想被销毁？"></textarea>
+          <div class="quick-insert">
+            <span>火速开喷：</span>
+            <button type="button" class="quick-chip" data-template="今天的离谱程度已经突破大气层。">离谱</button>
+            <button type="button" class="quick-chip" data-template="我真的需要一个暂停世界的按钮。">暂停世界</button>
+            <button type="button" class="quick-chip" data-template="这件事应该被立刻扔进熔炉。">扔进熔炉</button>
+          </div>
           <div class="vent-actions">
             <span id="char-counter" class="char-counter">0 / 500</span>
             <button id="destroy-btn" class="destroy-btn">销毁</button>
@@ -34,8 +56,11 @@
 
       <section class="panel leaderboard-panel">
         <div class="leaderboard-header">
-          <h2>高能吐槽榜</h2>
-          <span class="leaderboard-pill">按点赞数排序</span>
+          <div>
+            <h2>高能吐槽榜</h2>
+            <span class="leaderboard-pill">按点赞数排序 · 实时同步</span>
+          </div>
+          <div class="filter-toolbar" id="filter-toolbar"></div>
         </div>
         <div id="leaderboard" class="leaderboard-list">
           <div class="empty-state">还没有任何吐槽。成为第一个点燃熔炉的人。</div>
