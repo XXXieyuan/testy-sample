@@ -2,7 +2,18 @@
 function getNickname() {
   let nick = document.cookie.match(/ventNickname=([^;]+)/);
   if (nick) return decodeURIComponent(nick[1]);
-  const prefixes = ['匿名熔炉者', '暗夜喷火龙', '键盘毁灭者', '深夜怒吼兽', '摸鱼叛逆者', '暴躁老哥', '咆哮帝', '狂怒战士', '午夜游魂', '愤怒小鸟'];
+  const prefixes = [
+    'Anon Furnace',
+    'Midnight Dragon',
+    'Keyboard Smasher',
+    'Midnight Howler',
+    'Slacking Rebel',
+    'Grumpy Dude',
+    'Roaring Emperor',
+    'Raging Warrior',
+    'Midnight Drifter',
+    'Angry Bird',
+  ];
   const name = `${prefixes[Math.floor(Math.random() * prefixes.length)]}#${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
   document.cookie = `ventNickname=${encodeURIComponent(name)};max-age=${365 * 86400};path=/`;
   return name;
@@ -17,7 +28,7 @@ if (nicknameDisplayEl) {
 // Monster avatar generator -------------------------------------------------
 function hashCode(str) {
   let h = 0;
-  const text = String(str || '匿名');
+  const text = String(str || 'Anon');
   for (let i = 0; i < text.length; i += 1) {
     h = ((h << 5) - h) + text.charCodeAt(i);
     h |= 0;
@@ -34,7 +45,7 @@ function seededRandom(seed) {
 }
 
 function generateMonsterAvatar(nickname) {
-  const seed = hashCode(nickname || '匿名');
+  const seed = hashCode(nickname || 'Anon');
   const rng = seededRandom(seed);
   const canvas = document.createElement('canvas');
   canvas.width = 64;
@@ -66,12 +77,20 @@ function generateMonsterAvatar(nickname) {
 }
 
 // Category & rage state ----------------------------------------------------
-let selectedCategory = '其他';
-let filterCategory = '全部';
+let selectedCategory = 'Other';
+let filterCategory = 'All';
 let consecutivePosts = 0;
 
 // Dark humor placeholders --------------------------------------------------
-const placeholders = ['今天又想骂谁？', '把不爽写出来，写完炸掉', '你的怒火价值连城', '深呼吸，然后开骂', '这里没有老板看得到', '尽情发泄吧，反正要炸掉', '写完就炸，绝不留证据'];
+const placeholders = [
+  'Who deserves your rage today?',
+  'Write the frustration down, then blow it up.',
+  'Your anger is worth its weight in gold.',
+  'Deep breath… now scream in text.',
+  'No bosses can see this feed.',
+  'Vent as hard as you want; it all gets destroyed.',
+  'Type it, torch it, leave no evidence.',
+];
 
 function rotatePlaceholder() {
   const ta = document.getElementById('ventInput') || document.getElementById('vent-input');
@@ -141,9 +160,9 @@ animateParticles();
 // Global app state ---------------------------------------------------------
 const state = {
   vents: [],
-  category: '全部',
-  composeCategory: '其他',
-  validCategories: ['老板', '学校', '生活', '感情', '其他'],
+  category: 'All',
+  composeCategory: 'Other',
+  validCategories: ['Work', 'School', 'Life', 'Relationships', 'Other'],
   todayDestroyed: 0,
   categoryTotals: {},
   nickname: myNickname,
@@ -160,13 +179,13 @@ const state = {
 const api = {
   async getProfile() {
     const res = await fetch('/api/profile');
-    if (!res.ok) throw new Error('获取配置失败');
+    if (!res.ok) throw new Error('Failed to load configuration.');
     return res.json();
   },
-  async getVents(category = '全部') {
-    const query = category && category !== '全部' ? `?category=${encodeURIComponent(category)}` : '';
+  async getVents(category = 'All') {
+    const query = category && category !== 'All' ? `?category=${encodeURIComponent(category)}` : '';
     const res = await fetch(`/api/vents${query}`);
-    if (!res.ok) throw new Error('获取排行榜失败');
+    if (!res.ok) throw new Error('Failed to load leaderboard.');
     return res.json();
   },
   async createVent(content, category, nickname) {
@@ -177,7 +196,7 @@ const api = {
     });
     const data = await res.json();
     if (!res.ok) {
-      const message = data && data.error ? data.error : '创建失败';
+      const message = data && data.error ? data.error : 'Failed to create vent.';
       throw new Error(message);
     }
     return data;
@@ -186,13 +205,13 @@ const api = {
     const res = await fetch(`/api/vents/${id}/like`, { method: 'POST' });
     const data = await res.json();
     if (!res.ok) {
-      throw new Error(data && data.error ? data.error : '点赞失败');
+      throw new Error(data && data.error ? data.error : 'Failed to like vent.');
     }
     return data;
   },
   async getDailyCount() {
     const res = await fetch('/api/daily-count');
-    if (!res.ok) throw new Error('获取今日计数失败');
+    if (!res.ok) throw new Error('Failed to load today’s count.');
     return res.json();
   },
 };
@@ -201,7 +220,7 @@ function formatDateTime(isoLike) {
   if (!isoLike) return '';
   const date = new Date(isoLike);
   if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleString('zh-CN', {
+  return date.toLocaleString('en-US', {
     hour12: false,
     year: 'numeric',
     month: '2-digit',
@@ -256,7 +275,7 @@ function updateHeaderStats() {
   const today = document.getElementById('today-destroyed');
   const nickname = document.getElementById('nickname-display');
   if (today) today.textContent = state.todayDestroyed;
-  if (nickname) nickname.textContent = state.nickname || '匿名熔炉者#0000';
+  if (nickname) nickname.textContent = state.nickname || 'Anon Furnace#0000';
 }
 
 // Rage meter, sound & combo -----------------------------------------------
@@ -268,7 +287,7 @@ function updateRageMeter() {
   }
   const text = document.querySelector('.rage-meter-label') || document.querySelector('.rage-text');
   if (text) {
-    text.textContent = `暴怒计量：${consecutivePosts}/3`;
+    text.textContent = `Rage level: ${consecutivePosts}/3`;
   }
 }
 
@@ -297,7 +316,7 @@ function showCombo(count) {
   if (count < 2) return;
   const el = document.getElementById('combo-counter') || document.getElementById('combo-banner');
   if (!el) return;
-  el.textContent = `连击 x${count}! 🔥`;
+  el.textContent = `Combo x${count}! 🔥`;
   el.style.display = 'block';
   // restart animation
   el.style.animation = 'none';
@@ -314,7 +333,7 @@ function renderCategoryButtons(rootId, activeCategory, onSelect, includeAll = fa
   const root = document.getElementById(rootId);
   if (!root) return;
   root.innerHTML = '';
-  const categories = includeAll ? ['全部', ...state.validCategories] : state.validCategories;
+  const categories = includeAll ? ['All', ...state.validCategories] : state.validCategories;
   categories.forEach((category) => {
     const button = document.createElement('button');
     button.type = 'button';
@@ -336,8 +355,8 @@ function createLeaderboardItem(vent, index, likeHandler) {
 
   const monster = document.createElement('img');
   monster.className = 'monster-avatar';
-  monster.alt = `${vent.nickname} 的像素怪物头像`;
-  monster.src = generateMonsterAvatar(vent.nickname || '匿名熔炉者');
+  monster.alt = `${vent.nickname} pixel monster avatar`;
+  monster.src = generateMonsterAvatar(vent.nickname || 'Anon Furnace');
 
   const main = document.createElement('div');
   main.className = 'leaderboard-main';
@@ -351,7 +370,7 @@ function createLeaderboardItem(vent, index, likeHandler) {
 
   const identity = document.createElement('div');
   identity.className = 'vent-identity';
-  identity.innerHTML = `<strong>${escapeHtml(vent.nickname || '匿名熔炉者')}</strong><span class="tag-pill">${escapeHtml(vent.category || '其他')}</span>`;
+  identity.innerHTML = `<strong>${escapeHtml(vent.nickname || 'Anon Furnace')}</strong><span class="tag-pill">${escapeHtml(vent.category || 'Other')}</span>`;
 
   topRow.appendChild(badge);
   topRow.appendChild(identity);
@@ -367,12 +386,12 @@ function createLeaderboardItem(vent, index, likeHandler) {
   meta.className = 'vent-meta';
 
   const timeSpan = document.createElement('span');
-  timeSpan.textContent = formatDateTime(vent.created_at) || '刚刚';
+  timeSpan.textContent = formatDateTime(vent.created_at) || 'Just now';
 
   const likeBtn = document.createElement('button');
   likeBtn.className = 'like-button';
   likeBtn.type = 'button';
-  likeBtn.innerHTML = '<span>⚡</span><span>击中要害</span>';
+  likeBtn.innerHTML = '<span>⚡</span><span>Struck a nerve</span>';
 
   const countSpan = document.createElement('span');
   countSpan.className = 'like-count';
@@ -407,7 +426,7 @@ function renderLeaderboardFromState() {
   if (!state.vents.length) {
     const empty = document.createElement('div');
     empty.className = 'empty-state';
-    empty.textContent = `「${state.category}」标签下还没有任何吐槽。`;
+    empty.textContent = `No vents found under “${state.category}”.`;
     root.appendChild(empty);
     return;
   }
@@ -436,7 +455,7 @@ function renderLeaderboardItem(vent, index) {
 function applySnapshot(payload) {
   if (!payload) return;
   state.validCategories = payload.meta?.validCategories || state.validCategories;
-  state.categoryTotals = { 全部: payload.meta?.totalDestroyed || 0, ...(payload.meta?.categoryTotals || {}) };
+  state.categoryTotals = { All: payload.meta?.totalDestroyed || 0, ...(payload.meta?.categoryTotals || {}) };
   state.todayDestroyed = payload.meta?.todayDestroyed || 0;
   state.vents = Array.isArray(payload.vents) ? payload.vents : [];
   updateHeaderStats();
@@ -458,7 +477,7 @@ async function refreshLeaderboard() {
   } catch (err) {
     const errorDiv = document.createElement('div');
     errorDiv.className = 'empty-state';
-    errorDiv.textContent = '排行榜暂时离线，请稍后再试。';
+    errorDiv.textContent = 'Leaderboard is temporarily offline. Please try again later.';
     root.appendChild(errorDiv);
     return;
   }
@@ -478,7 +497,7 @@ function updateStreakBanner() {
   const banner = document.getElementById('streak-banner');
   if (!banner) return;
   const current = state.destroyStreak % 3;
-  banner.textContent = `连续销毁 ${current} / 3`;
+  banner.textContent = `Consecutive destroys ${current} / 3`;
 }
 
 function triggerRageMode() {
@@ -546,7 +565,7 @@ function setupDestroyFlow() {
     errorEl.textContent = '';
 
     if (!raw) {
-      errorEl.textContent = '先写点什么，再交给熔炉。';
+      errorEl.textContent = 'Write something first, then hand it to the furnace.';
       return;
     }
 
@@ -556,7 +575,7 @@ function setupDestroyFlow() {
     try {
       triggerAnimation();
       triggerScreenShake();
-      await api.createVent(raw, selectedCategory || state.composeCategory || '其他', myNickname);
+      await api.createVent(raw, selectedCategory || state.composeCategory || 'Other', myNickname);
       textarea.value = '';
       updateCounter();
       consecutivePosts += 1;
@@ -569,7 +588,7 @@ function setupDestroyFlow() {
       await refreshLeaderboard();
     } catch (err) {
       console.error(err);
-      errorEl.textContent = err.message || '提交失败，请稍后重试。';
+      errorEl.textContent = err.message || 'Submission failed. Please try again later.';
     } finally {
       button.disabled = false;
       textarea.disabled = false;
@@ -594,7 +613,7 @@ function setupRealtime() {
     try {
       const message = JSON.parse(event.data);
       if ((message.type === 'hello' || message.type === 'vents:update') && message.payload) {
-        if (state.category !== '全部') {
+        if (state.category !== 'All') {
           refreshLeaderboard();
         } else {
           applySnapshot(message.payload);
@@ -609,7 +628,7 @@ function setupRealtime() {
       } else if (message.type === 'new_vent' && message.payload) {
         const vent = message.payload.vent || message.payload;
         if (vent) {
-          if (state.category === '全部' || vent.category === state.category) {
+          if (state.category === 'All' || vent.category === state.category) {
             state.vents = [vent, ...(state.vents || [])];
             renderLeaderboardFromState();
           }
@@ -639,7 +658,7 @@ async function bootstrap() {
   const profileData = await api.getProfile();
   state.validCategories = profileData.validCategories || state.validCategories;
   state.categoryTotals = Object.fromEntries(state.validCategories.map((category) => [category, 0]));
-  state.categoryTotals.全部 = 0;
+  state.categoryTotals.All = 0;
   state.nickname = myNickname;
   updateHeaderStats();
 
@@ -648,7 +667,7 @@ async function bootstrap() {
     selectedCategory = category;
     renderCategoryButtons('category-group', category, composeSelect, false);
   };
-  composeSelect('其他');
+  composeSelect('Other');
 
   const filterSelect = async (category) => {
     state.category = category;

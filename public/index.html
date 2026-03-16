@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -13,25 +13,25 @@
       <div class="logo-mark">⚡</div>
       <div class="title-block">
         <h1>Testy Vent Lab</h1>
-        <p class="subtitle">把情绪写出来，点一下「销毁」，剩下交给熔炉。</p>
+        <p class="subtitle">Dump your feelings, hit “Destroy”, and let the furnace handle the rest.</p>
       </div>
       <div class="header-stats">
         <div class="daily-counter">
-          <span class="counter-label">今日全站已销毁</span>
+          <span class="counter-label">Vents destroyed today</span>
           <strong id="today-destroyed">0</strong>
-          <span class="counter-unit">条</span>
+          <span class="counter-unit">posts</span>
         </div>
         <div class="nickname-card">
-          <span class="counter-label">你的匿名代号</span>
-          <strong id="nickname-display">匿名熔炉者#0000</strong>
+          <span class="counter-label">Your anonymous codename</span>
+          <strong id="nickname-display">Anon Furnace#0000</strong>
         </div>
       </div>
     </header>
 
     <main class="layout">
       <section class="panel vent-panel">
-        <h2>发泄熔炉</h2>
-        <p class="hint">匿名吐槽、碎碎念、胡乱发疯都可以。点击下方「销毁」按钮，看它在霓虹火焰中化为灰烬。</p>
+        <h2>Venting Furnace</h2>
+        <p class="hint">Anonymous vents, late‑night rambling, and feral rants are all welcome. Hit “Destroy” and watch it burn away in neon flames.</p>
 
         <div class="vent-box">
           <div class="composer-meta">
@@ -40,20 +40,20 @@
               <div class="rage-meter-bar">
                 <div class="rage-meter-fill"></div>
               </div>
-              <div class="rage-meter-label">暴怒计量：0 / 3</div>
+              <div class="rage-meter-label">Rage level: 0 / 3</div>
             </div>
           </div>
-          <textarea id="vent-input" maxlength="500" placeholder="今天什么事情最想被销毁？"></textarea>
+          <textarea id="vent-input" maxlength="500" placeholder="What deserves to be destroyed the most today?"></textarea>
           <div id="combo-banner" class="combo-banner" aria-hidden="true"></div>
           <div class="quick-insert">
-            <span>火速开喷：</span>
-            <button type="button" class="quick-chip" data-template="今天的离谱程度已经突破大气层。">离谱</button>
-            <button type="button" class="quick-chip" data-template="我真的需要一个暂停世界的按钮。">暂停世界</button>
-            <button type="button" class="quick-chip" data-template="这件事应该被立刻扔进熔炉。">扔进熔炉</button>
+            <span>Quick start:</span>
+            <button type="button" class="quick-chip" data-template="Today’s absurdity level has left Earth’s atmosphere.">Absurd</button>
+            <button type="button" class="quick-chip" data-template="I seriously need a button to pause the entire world.">Pause the world</button>
+            <button type="button" class="quick-chip" data-template="This deserves to be thrown straight into the furnace.">Into the furnace</button>
           </div>
           <div class="vent-actions">
             <span id="char-counter" class="char-counter">0 / 500</span>
-            <button id="destroy-btn" class="destroy-btn">销毁</button>
+            <button id="destroy-btn" class="destroy-btn">Destroy</button>
           </div>
           <div id="destroy-animation" class="destroy-animation" aria-hidden="true"></div>
           <p id="vent-error" class="error-msg" role="alert"></p>
@@ -63,25 +63,25 @@
       <section class="panel leaderboard-panel">
         <div class="leaderboard-header">
           <div>
-            <h2>高能吐槽榜</h2>
-            <span class="leaderboard-pill">按点赞数排序 · 实时同步</span>
+            <h2>Top Vents</h2>
+            <span class="leaderboard-pill">Sorted by likes · Live updating</span>
           </div>
           <div class="filter-toolbar" id="filter-toolbar"></div>
         </div>
         <div id="leaderboard" class="leaderboard-list">
-          <div class="empty-state">还没有任何吐槽。成为第一个点燃熔炉的人。</div>
+          <div class="empty-state">No vents yet. Be the first to light up the furnace.</div>
         </div>
       </section>
     </main>
 
     <footer class="app-footer">
-      <span>匿名 · 本地存储 · 霓虹实验场</span>
+      <span>Anonymous · Local storage · Neon playground</span>
       <span class="dot">·</span>
-      <span>原型用途，仅供发泄，不供报仇。</span>
+      <span>Prototype only: for venting, not vengeance.</span>
     </footer>
   </div>
 
-  <div id="rage-overlay" class="rage-overlay" aria-hidden="true">🔥 暴怒模式 🔥</div>
+  <div id="rage-overlay" class="rage-overlay" aria-hidden="true">🔥 Rage Mode 🔥</div>
   <div id="milestone-overlay" class="milestone-overlay" aria-hidden="true"></div>
 
   <script src="/app.js"></script>

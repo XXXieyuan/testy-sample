@@ -11,7 +11,8 @@ const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 const MAX_CONTENT_LEN = 500;
-const VALID_TAGS = ['老板', '学校', '生活', '感情', '其他'];
+// Canonical category values (stored as English in DB; mapped from legacy Chinese on startup)
+const VALID_TAGS = ['Work', 'School', 'Life', 'Relationships', 'Other'];
 
 function ensureDir(dirPath) {
   if (!fs.existsSync(dirPath)) {
@@ -29,16 +30,16 @@ function pick(list) {
 
 function generateNickname() {
   const prefixes = [
-    '匿名熔炉者',
-    '暗夜喷火龙',
-    '键盘毁灭者',
-    '深夜怒吼兽',
-    '摸鱼叛逆者',
-    '暴躁老哥',
-    '咆哮帝',
-    '狂怒战士',
-    '午夜游魂',
-    '愤怒小鸟',
+    'Anon Furnace',
+    'Midnight Dragon',
+    'Keyboard Smasher',
+    'Midnight Howler',
+    'Slacking Rebel',
+    'Grumpy Dude',
+    'Roaring Emperor',
+    'Raging Warrior',
+    'Midnight Drifter',
+    'Angry Bird',
   ];
   const prefix = pick(prefixes);
   return `${prefix}#${randomInt(1000, 9999)}`;
@@ -86,8 +87,8 @@ CREATE TABLE IF NOT EXISTS vents (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   content TEXT NOT NULL,
   likes INTEGER NOT NULL DEFAULT 0,
-  category TEXT NOT NULL DEFAULT '其他',
-  nickname TEXT NOT NULL DEFAULT '匿名熔炉者#0000',
+  category TEXT NOT NULL DEFAULT 'Other',
+  nickname TEXT NOT NULL DEFAULT 'Anon Furnace#0000',
   avatar_seed TEXT NOT NULL DEFAULT 'seed',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -97,15 +98,15 @@ db.exec(initStmt);
 // Lightweight, idempotent migrations for older databases
 // (explicit ALTERs kept for compatibility with earlier versions)
 try {
-  db.exec("ALTER TABLE vents ADD COLUMN category TEXT DEFAULT '其他'");
+  db.exec("ALTER TABLE vents ADD COLUMN category TEXT DEFAULT 'Other'");
 } catch (e) {}
 try {
-  db.exec("ALTER TABLE vents ADD COLUMN nickname TEXT DEFAULT '匿名'");
+  db.exec("ALTER TABLE vents ADD COLUMN nickname TEXT DEFAULT 'Anon Furnace#0000'");
 } catch (e) {}
 
 // More detailed migrations and indexes
 try {
-  db.exec("ALTER TABLE vents ADD COLUMN category TEXT NOT NULL DEFAULT '其他'");
+  db.exec("ALTER TABLE vents ADD COLUMN category TEXT NOT NULL DEFAULT 'Other'");
 } catch (err) {
   // ignore if column already exists
 }
@@ -129,6 +130,47 @@ if (!existingColumns.includes('avatar_seed')) {
   db.exec("ALTER TABLE vents ADD COLUMN avatar_seed TEXT NOT NULL DEFAULT 'seed'");
 }
 
+// Migration: normalize historic Chinese category values into English
+// so the rest of the app can always treat categories as English.
+try {
+  const legacyToEnglish = {
+    // Legacy Chinese categories -> English
+    '\u8001\u677f': 'Work',
+    '\u5b66\u6821': 'School',
+    '\u751f\u6d3b': 'Life',
+    '\u611f\u60c5': 'Relationships',
+    '\u5176\u4ed6': 'Other',
+    '\u5168\u90e8': 'All',
+  };
+  const updateCategory = db.prepare('UPDATE vents SET category = ? WHERE category = ?');
+  db.transaction(() => {
+    Object.entries(legacyToEnglish).forEach(([cn, en]) => {
+      updateCategory.run(en, cn);
+    });
+  })();
+} catch (err) {
+  console.error('category migration error', err);
+}
+
+// Note: stats still need to understand legacy Chinese values that may remain
+// (e.g. imported DB files). We keep a mapping for that below.
+const CATEGORY_LABELS = {
+  Work: 'Work',
+  School: 'School',
+  Life: 'Life',
+  Relationships: 'Relationships',
+  Other: 'Other',
+};
+const LEGACY_CATEGORY_MAP = {
+  '\u8001\u677f': 'Work',
+  '\u5b66\u6821': 'School',
+  '\u751f\u6d3b': 'Life',
+  '\u611f\u60c5': 'Relationships',
+  '\u5176\u4ed6': 'Other',
+  '\u5168\u90e8': 'All',
+};
+const ALL_CATEGORY = 'All';
+
 const ventSelect = `SELECT id, content, likes, category, nickname, avatar_seed, created_at FROM vents`;
 const insertVentStmt = db.prepare('INSERT INTO vents (content, category, nickname, avatar_seed) VALUES (?, ?, ?, ?)');
 const getVentsStmt = db.prepare(`${ventSelect} ORDER BY likes DESC, created_at DESC`);
@@ -141,17 +183,33 @@ const todayDestroyedStmt = db.prepare(
 const totalsByCategoryStmt = db.prepare('SELECT category, COUNT(*) AS count FROM vents GROUP BY category');
 
 function getCategoryStats() {
-  const rows = totalsByCategoryStmt.all();
+  const rows = totalsByCategoryStmt.all().map((row) => {
+    const englishKey = LEGACY_CATEGORY_MAP[row.category] || row.category;
+    return { category: englishKey, count: row.count };
+  });
   const stats = Object.fromEntries(VALID_TAGS.map((tag) => [tag, 0]));
   rows.forEach((row) => {
-    stats[row.category] = row.count;
+    if (stats[row.category] != null) {
+      stats[row.category] = row.count;
+    }
   });
   return stats;
 }
 
-function buildSnapshot(category = '全部') {
-  const normalizedCategory = VALID_TAGS.includes(category) ? category : '全部';
-  const vents = normalizedCategory === '全部' ? getVentsStmt.all() : getVentsByCategoryStmt.all(normalizedCategory);
+function normalizeCategory(input) {
+  if (!input) return ALL_CATEGORY;
+  if (VALID_TAGS.includes(input)) return input;
+  const mapped = LEGACY_CATEGORY_MAP[input];
+  if (mapped && mapped !== 'All') return mapped;
+  return ALL_CATEGORY;
+}
+
+function buildSnapshot(category = ALL_CATEGORY) {
+  const normalizedCategory = normalizeCategory(category);
+  const vents =
+    normalizedCategory === ALL_CATEGORY
+      ? getVentsStmt.all()
+      : getVentsByCategoryStmt.all(normalizedCategory);
   const todayDestroyed = todayDestroyedStmt.get().count;
   const totalDestroyed = db.prepare('SELECT COUNT(*) AS count FROM vents').get().count;
   return {
@@ -200,37 +258,39 @@ app.get('/api/profile', (req, res) => {
   res.json({ profile: req.viewer, validCategories: VALID_TAGS });
 });
 
-// 今日销毁总数
+// Daily destroyed total
 app.get('/api/daily-count', (req, res) => {
   const row = todayDestroyedStmt.get();
   res.json({ count: row.count });
 });
 
-// 兼容：排行榜数据（别名：/api/leaderboard）
+// Backwards-compatible leaderboard endpoint (alias of /api/leaderboard)
 app.get('/api/vents', (req, res) => {
-  const category = typeof req.query.category === 'string' ? req.query.category.trim() : '全部';
+  const category =
+    typeof req.query.category === 'string' ? req.query.category.trim() : ALL_CATEGORY;
   res.json(buildSnapshot(category));
 });
 
 app.get('/api/leaderboard', (req, res) => {
-  const category = typeof req.query.category === 'string' ? req.query.category.trim() : '全部';
+  const category =
+    typeof req.query.category === 'string' ? req.query.category.trim() : ALL_CATEGORY;
   res.json(buildSnapshot(category));
 });
 
 function handleCreateVent(req, res) {
   const { content, category, nickname } = req.body || {};
   const trimmed = (content || '').trim();
-  const normalizedCategory = VALID_TAGS.includes(category) ? category : '其他';
+  const normalizedCategory = normalizeCategory(category) === ALL_CATEGORY ? 'Other' : normalizeCategory(category);
   const safeNickname =
     typeof nickname === 'string' && nickname.trim() ? nickname.trim() : req.viewer.nickname;
 
   if (!trimmed) {
-    return res.status(400).json({ error: '内容不能为空。' });
+    return res.status(400).json({ error: 'Content cannot be empty.' });
   }
   if (trimmed.length > MAX_CONTENT_LEN) {
     return res
       .status(400)
-      .json({ error: `内容过长（最多 ${MAX_CONTENT_LEN} 字）。` });
+      .json({ error: `Content too long (max ${MAX_CONTENT_LEN} characters).` });
   }
 
   const avatarSeed = makeAvatarSeed(safeNickname);
@@ -238,7 +298,7 @@ function handleCreateVent(req, res) {
   const vent = getVentStmt.get(info.lastInsertRowid);
   const todayDestroyed = todayDestroyedStmt.get().count;
 
-  // 细粒度推送：新吐槽 + 今日计数
+  // Fine-grained push: new vent + today count
   broadcast('new_vent', {
     vent,
     category: normalizedCategory,
@@ -247,8 +307,8 @@ function handleCreateVent(req, res) {
   });
   broadcast('daily_count', { count: todayDestroyed });
 
-  // 保持向后兼容的快照广播
-  const snapshot = buildSnapshot('全部');
+  // Backwards-compatible snapshot broadcast
+  const snapshot = buildSnapshot(ALL_CATEGORY);
   broadcast('vents:update', {
     snapshot,
     category: normalizedCategory,
@@ -261,19 +321,19 @@ function handleCreateVent(req, res) {
 function handleLikeVent(req, res) {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id <= 0) {
-    return res.status(400).json({ error: 'ID 无效。' });
+    return res.status(400).json({ error: 'Invalid ID.' });
   }
 
   const result = likeVentStmt.run(id);
   if (result.changes === 0) {
-    return res.status(404).json({ error: '未找到对应的吐槽。' });
+    return res.status(404).json({ error: 'Vent not found.' });
   }
 
   const vent = getVentStmt.get(id);
 
-  // 点赞实时更新
+  // Real-time like updates
   broadcast('like_update', { id: vent.id, likes: vent.likes });
-  broadcast('vents:update', buildSnapshot('全部'));
+  broadcast('vents:update', buildSnapshot(ALL_CATEGORY));
 
   return res.json({ vent });
 }
@@ -283,7 +343,7 @@ app.post('/api/vents', (req, res) => {
   return handleCreateVent(req, res);
 });
 
-// 兼容：单数形式的创建接口
+// Backwards-compatible: singular create endpoint
 app.post('/api/vent', (req, res) => {
   return handleCreateVent(req, res);
 });
@@ -293,7 +353,7 @@ app.post('/api/vents/:id/like', (req, res) => {
   return handleLikeVent(req, res);
 });
 
-// 兼容：原有接口路径 /api/like/:id
+// Backwards-compatible: original like path /api/like/:id
 app.post('/api/like/:id', (req, res) => {
   return handleLikeVent(req, res);
 });
@@ -309,7 +369,7 @@ app.get('*', (req, res, next) => {
 const wss = new WebSocketServer({ server, path: '/ws' });
 
 wss.on('connection', (socket) => {
-  socket.send(JSON.stringify({ type: 'hello', payload: buildSnapshot('全部') }));
+  socket.send(JSON.stringify({ type: 'hello', payload: buildSnapshot(ALL_CATEGORY) }));
 });
 
 server.listen(PORT, () => {

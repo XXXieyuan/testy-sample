@@ -1,20 +1,33 @@
 # testy-sample
 
-一个暗色霓虹风的 AI 灵感发泄平台原型：用户输入吐槽文字，点击 **「销毁」** 后触发焚化动画，内容会被写入 SQLite，并进入按点赞数排序的排行榜。
+An experimental dark-neon venting prototype: users type out whatever they want to vent about, hit **“Destroy”**, and watch it get incinerated while the text is stored in SQLite and ranked on a like-based leaderboard.
+
+## What This Is
+
+Testy Vent Lab is a tiny single-page app that behaves like a “Venting Furnace”:
+
+- You write a short vent (up to 500 characters).
+- You choose a category such as Work, School, Life, Relationships, or Other.
+- You click **Destroy** to send it into the furnace.
+- The entry is saved to a local SQLite database and shows up on a global leaderboard where others can “Struck a nerve” (like) your vent.
+
+Everything is anonymous. Each browser gets a fun codename like `Anon Furnace#1234` or `Midnight Dragon#5678`, which is tracked via cookies only on the client.
 
 ## Features
 
-- **销毁式发泄入口**：输入吐槽后点击「销毁」，触发碎裂/焚化视觉效果
-- **SQLite 永久存储**：所有吐槽写入本地 SQLite 数据库
-- **排行榜机制**：展示所有吐槽，支持点赞，按点赞数降序排序
-- **暗色霓虹 UI**：主色调为深色背景 + 橙色 / 绿色荧光效果
-- **单页面应用**：Node.js + Express 提供 API 和静态前端
+- **Venting Furnace composer**: write a vent, pick a category, and hit **Destroy** to trigger a neon-style explosion animation.
+- **SQLite persistence**: all vents are stored in `data/vents.db` using `better-sqlite3`.
+- **Top Vents leaderboard**: shows all vents sorted by likes (and creation time as a tiebreaker), with live updates over WebSocket.
+- **Anonymous nicknames & monster avatars**: nicknames are generated on the server, and each vent is rendered with a small pixel monster avatar derived from the nickname.
+- **Dark neon UI**: dark background with electric accent colors and a minimal, game-like feel.
+- **Single Page App**: Node.js + Express serve the API and a static HTML/CSS/JS front end.
 
 ## Tech Stack
 
-- **Backend:** Node.js + Express
-- **Database:** SQLite
-- **Frontend:** HTML + CSS + JavaScript
+- **Backend:** Node.js + Express + better-sqlite3
+- **Database:** SQLite (file at `data/vents.db`)
+- **Frontend:** HTML + CSS + vanilla JavaScript
+- **Transport:** REST + WebSocket (`ws`)
 - **Architecture:** SPA (Single Page Application)
 
 ## Getting Started
@@ -37,32 +50,56 @@ npm start
 http://localhost:3000
 ```
 
+You should see the Venting Furnace interface with a composer on the left and a Top Vents leaderboard on the right.
+
 ## API Endpoints
 
-- `GET /api/health` — health check
-- `GET /api/vents` — 获取所有吐槽，按点赞数降序返回
-- `POST /api/vents` — 新建吐槽
-- `POST /api/vents/:id/like` — 给吐槽点赞
+- `GET /api/health` — basic health check, returns `{ status: "ok" }`.
+- `GET /api/profile` — returns the current viewer profile (nickname, avatar seed) and the list of valid categories.
+- `GET /api/daily-count` — returns how many vents were created today.
+- `GET /api/vents?category=...` — returns a snapshot containing:
+  - `vents`: list of vents (id, content, likes, category, nickname, avatar_seed, created_at)
+  - `meta`: leaderboard metadata (todayDestroyed, category, validCategories, categoryTotals, totalDestroyed)
+- `GET /api/leaderboard` — alias of `GET /api/vents`.
+- `POST /api/vents` — create a new vent.
+- `POST /api/vent` — legacy alias for creating a vent.
+- `POST /api/vents/:id/like` — like a vent.
+- `POST /api/like/:id` — legacy alias for liking a vent.
 
-### Example payload
+### Example create payload
 
 ```json
 {
-  "content": "今天的破会开得像无限递归。"
+  "content": "This meeting feels like an infinite recursion.",
+  "category": "Work"
 }
 ```
+
+If `category` is omitted or not one of `Work | School | Life | Relationships | Other`, it will default to `Other`.
+
+## Categories & Migration
+
+The app uses English category names everywhere:
+
+- `Work`
+- `School`
+- `Life`
+- `Relationships`
+- `Other`
+
+On startup, the server runs a small migration that rewrites older database rows that used Chinese category names into their English equivalents. This keeps the leaderboard and filters consistent even if your `vents.db` was created in a previous Chinese-language version of the app.
 
 ## Project Structure
 
 ```bash
 testy-sample/
 ├── public/
-│   ├── index.html
-│   ├── styles.css
-│   └── app.js
+│   ├── index.html      # Main SPA shell (Venting Furnace UI)
+│   ├── styles.css      # Dark neon styling
+│   └── app.js          # Frontend logic, WebSocket handling, rendering
 ├── data/
-│   └── vents.db
-├── server.js
+│   └── vents.db        # SQLite database (created at runtime)
+├── server.js           # Express server, WebSocket, SQLite access, migrations
 ├── package.json
 ├── AUTOPILOT_LOG.md
 └── README.md
@@ -70,18 +107,19 @@ testy-sample/
 
 ## Notes
 
-- 数据库存放在 `data/vents.db`
-- `node_modules/` 和数据库文件已加入 `.gitignore`
-- 当前版本为轻量原型，适合继续扩展登录、AI 回复、内容审核等功能
+- The SQLite file lives at `data/vents.db`. The directory is created automatically if missing.
+- `node_modules/` and database files are ignored by Git.
+- This is a lightweight prototype, not production-hardened. There is no auth, rate limiting, or content moderation.
 
 ## Future Ideas
 
-- 接入 AI 回复 / 共情文案生成
-- 增加多标签分类（工作 / 学业 / 关系 / 随机发疯）
-- 增加“今日最毒吐槽”模块
-- 支持分页、搜索、匿名昵称
-- 加入节奏更强的销毁动画和音效
+- Add AI-based replies or empathetic copy generation.
+- Introduce richer tagging and filters (e.g. Work / School / Relationships / Random chaos).
+- Add a “Most savage vent of the day” section.
+- Support pagination, full-text search, and more powerful filtering.
+- Enhance the destroy animation with stronger timing, particles, and sound design.
 
 ## License
 
 MIT
+
